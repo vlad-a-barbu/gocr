@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "demo.go",
-            "args": ["image.jpg", "20"]
+            "args": ["image.jpg", "4"]
         }
     ]
 }

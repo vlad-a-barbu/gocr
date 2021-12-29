@@ -23,7 +23,7 @@ func ReadImage(path string) (image.Image, error) {
 }
 
 func WritePng(im image.Image, path string) error {
-	wr, _ := os.Create("result.png")
+	wr, _ := os.Create(path)
 	err := png.Encode(wr, im)
 	if err != nil {
 		return err
