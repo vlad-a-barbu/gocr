@@ -5,18 +5,20 @@ import (
 	"image"
 	"log"
 	"os"
-	"sync"
+	"strconv"
 
+	models "github.com/vlad-a-barbu/gocr/models"
 	r "github.com/vlad-a-barbu/gocr/recognition"
 	u "github.com/vlad-a-barbu/gocr/utils"
 )
 
 func main() {
 
-	if len(os.Args) < 2 {
-		log.Fatalln("Image path not provided")
+	if len(os.Args) < 3 {
+		log.Fatalln("Provide the image path and a subelement number")
 	}
 	path := os.Args[1]
+	sen, _ := strconv.Atoi(os.Args[2])
 
 	im, err := u.ReadImage(path)
 	if err != nil {
@@ -24,39 +26,35 @@ func main() {
 	}
 
 	gim := u.AsGrayImage(im)
+	u.WritePng(gim, "grayscale.png")
+
+	/*gim := u.Threshold(gray, r.MAX_Y)
+	u.WritePng(gim, "blackwhite.png")*/
 
 	m := r.Recognize(gim)
 
-	os.RemoveAll("hists")
+	r, c := Test(sen, m, gim)
+	fmt.Println("Rows: ", r)
+	fmt.Println("Cols: ", c)
 
-	if err := os.Mkdir("hists", os.ModePerm); err != nil {
-		log.Fatal(err)
+	res1 := models.Match(r, c)
+	for _, r := range res1 {
+		fmt.Printf("Match: '%c'\n", r)
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(len(m))
-	for id, ps := range m {
-		go func(i int, points []image.Point) {
-			if err := os.Mkdir("hists/"+fmt.Sprint(i), os.ModePerm); err != nil {
-				log.Fatal(err)
-			}
+	//u.WriteHists(m, gim)
+}
 
-			si := r.SubImage(points, gim)
-			bounds := si.Bounds()
-			if bounds.Max.X == 0 || bounds.Max.Y == 0 {
-				wg.Done()
-				return
-			}
+func Test(id int, m map[int][]image.Point, gim *image.Gray) (rd []int, cd []int) {
+	points := m[id]
+	si := r.SubImage(points, gim)
+	u.WritePng(si, "subimage.png")
 
-			err = u.WritePng(si, "hists/"+fmt.Sprint(i)+"/image.png")
-			if err != nil {
-				log.Fatal(err)
-			}
+	rows, _ := r.TraverseCols(si)
+	rdata := r.GetHistData(rows)
 
-			r.GenerateHists(si, i)
-			fmt.Println("Hist generated ", i)
-			wg.Done()
-		}(id, ps)
-	}
-	wg.Wait()
+	cols, _ := r.TraverseRows(si)
+	cdata := r.GetHistData(cols)
+
+	return rdata, cdata
 }

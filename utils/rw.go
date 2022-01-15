@@ -1,10 +1,15 @@
 package utils
 
 import (
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
+	"log"
 	"os"
+	"sync"
+
+	r "github.com/vlad-a-barbu/gocr/recognition"
 )
 
 func ReadImage(path string) (image.Image, error) {
@@ -29,4 +34,40 @@ func WritePng(im image.Image, path string) error {
 		return err
 	}
 	return nil
+}
+
+func WriteHists(m map[int][]image.Point, gim *image.Gray) {
+
+	os.RemoveAll("hists")
+
+	if err := os.Mkdir("hists", os.ModePerm); err != nil {
+		log.Fatal(err)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(len(m))
+	for id, ps := range m {
+		go func(i int, points []image.Point) {
+			if err := os.Mkdir("hists/"+fmt.Sprint(i), os.ModePerm); err != nil {
+				log.Fatal(err)
+			}
+
+			si := r.SubImage(points, gim)
+			bounds := si.Bounds()
+			if bounds.Max.X == 0 || bounds.Max.Y == 0 {
+				wg.Done()
+				return
+			}
+
+			err := WritePng(si, "hists/"+fmt.Sprint(i)+"/image.png")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			r.GenerateHists(si, i)
+			fmt.Println("Hist generated ", i)
+			wg.Done()
+		}(id, ps)
+	}
+	wg.Wait()
 }
