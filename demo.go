@@ -9,11 +9,15 @@ import (
 
 	models "github.com/vlad-a-barbu/gocr/models"
 	r "github.com/vlad-a-barbu/gocr/recognition"
+	server "github.com/vlad-a-barbu/gocr/server"
 	u "github.com/vlad-a-barbu/gocr/utils"
 )
 
 func main() {
+	server.Serve(8081)
+}
 
+func Demo(writeHists bool, threshold bool) {
 	if len(os.Args) < 3 {
 		log.Fatalln("Provide the image path and a subelement number")
 	}
@@ -28,12 +32,14 @@ func main() {
 	gim := u.AsGrayImage(im)
 	u.WritePng(gim, "grayscale.png")
 
-	/*gim := u.Threshold(gray, r.MAX_Y)
-	u.WritePng(gim, "blackwhite.png")*/
+	if threshold {
+		gim := u.Threshold(gim, r.MAX_Y)
+		u.WritePng(gim, "blackwhite.png")
+	}
 
 	m := r.Recognize(gim)
 
-	r, c := Test(sen, m, gim)
+	r, c := ToHistData(sen, m, gim)
 	fmt.Println("Rows: ", r)
 	fmt.Println("Cols: ", c)
 
@@ -42,10 +48,12 @@ func main() {
 		fmt.Printf("Match: '%c'\n", r)
 	}
 
-	//u.WriteHists(m, gim)
+	if writeHists {
+		u.WriteHists(m, gim)
+	}
 }
 
-func Test(id int, m map[int][]image.Point, gim *image.Gray) (rd []int, cd []int) {
+func ToHistData(id int, m map[int][]image.Point, gim *image.Gray) (rd []int, cd []int) {
 	points := m[id]
 	si := r.SubImage(points, gim)
 	u.WritePng(si, "subimage.png")
