@@ -1,6 +1,7 @@
 package recognition
 
 import (
+	"github.com/vlad-a-barbu/gocr/models"
 	"image"
 )
 
@@ -69,7 +70,7 @@ func Fill2(gim *image.Gray, lookup map[image.Point]int, p image.Point, eid int, 
 
 func Recognize(gim *image.Gray) map[int][]image.Point {
 
-	eid := 1
+	eid := -1
 	lookup := map[image.Point]int{}
 	elems := map[int][]image.Point{}
 	bounds := gim.Bounds()
@@ -133,4 +134,22 @@ func Hamming(c1 []int, c2 []int) int {
 	}
 
 	return dist
+}
+
+func Guess(gim *image.Gray) (image.Image, []rune) {
+
+	m := Recognize(gim)
+	points := m[0]
+	si := SubImage(points, gim)
+
+	rows, _ := TraverseCols(si)
+	rdata := GetHistData(rows)
+
+	cols, _ := TraverseRows(si)
+	cdata := GetHistData(cols)
+
+	matches := models.Match(rdata, cdata)
+
+	return si, matches
+
 }
