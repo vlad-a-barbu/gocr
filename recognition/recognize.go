@@ -2,10 +2,12 @@ package recognition
 
 import (
 	"github.com/vlad-a-barbu/gocr/models"
+	"github.com/vlad-a-barbu/gocr/viewmodels"
 	"image"
+	"regexp"
 )
 
-const MAX_Y = 200
+const MAX_Y = 130
 
 func Candidate(p image.Point, gim *image.Gray, lookup map[image.Point]int) bool {
 	bounds := gim.Bounds()
@@ -136,20 +138,43 @@ func Hamming(c1 []int, c2 []int) int {
 	return dist
 }
 
-func Guess(gim *image.Gray) (image.Image, []rune) {
+func Guess(gim *image.Gray) []rune {
 
-	m := Recognize(gim)
+	/*m := Recognize(gim)
 	points := m[0]
-	si := SubImage(points, gim)
+	si := SubImage(points, gim)*/
 
-	rows, _ := TraverseCols(si)
+	rows, _ := TraverseCols(gim)
 	rdata := GetHistData(rows)
 
-	cols, _ := TraverseRows(si)
+	cols, _ := TraverseRows(gim)
 	cdata := GetHistData(cols)
 
 	matches := models.Match(rdata, cdata)
 
-	return si, matches
+	return matches
 
+}
+
+func MatchExpressions(gim *image.Gray, expressions viewmodels.Expressions) bool {
+
+	if len(expressions.ColExpr) == 0 ||
+		len(expressions.RowExpr) == 0 {
+		return false
+	}
+
+	/*m := Recognize(gim)
+	points := m[0]
+	si := SubImage(points, gim)*/
+
+	rows, _ := TraverseCols(gim)
+	rdata := GetHistData(rows)
+
+	cols, _ := TraverseRows(gim)
+	cdata := GetHistData(cols)
+
+	rres, _ := regexp.MatchString(expressions.RowExpr, models.ToString(rdata))
+	cres, _ := regexp.MatchString(expressions.ColExpr, models.ToString(cdata))
+
+	return rres && cres
 }

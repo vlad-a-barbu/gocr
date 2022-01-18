@@ -1,4 +1,4 @@
-package drawing
+package viewmodels
 
 type Line struct {
 	Points      []Point

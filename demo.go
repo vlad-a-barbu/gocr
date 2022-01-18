@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/vlad-a-barbu/gocr/server"
 	"image"
 	"log"
 	"os"
@@ -9,12 +10,12 @@ import (
 
 	models "github.com/vlad-a-barbu/gocr/models"
 	r "github.com/vlad-a-barbu/gocr/recognition"
-	server "github.com/vlad-a-barbu/gocr/server"
 	u "github.com/vlad-a-barbu/gocr/utils"
 )
 
 func main() {
 	server.Serve(8081)
+	//Demo(false, true)
 }
 
 func Demo(writeHists bool, threshold bool) {
@@ -30,12 +31,12 @@ func Demo(writeHists bool, threshold bool) {
 	}
 
 	gim := u.AsGrayImage(im)
-	u.WritePng(gim, "grayscale.png")
 
 	if threshold {
-		gim := u.Threshold(gim, r.MAX_Y)
-		u.WritePng(gim, "blackwhite.png")
+		gim = u.Threshold(gim, r.MAX_Y)
 	}
+
+	u.WritePng(gim, "preprocessed.png")
 
 	m := r.Recognize(gim)
 

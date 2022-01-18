@@ -1,7 +1,7 @@
 package utils
 
 import (
-	d "github.com/vlad-a-barbu/gocr/drawing"
+	d "github.com/vlad-a-barbu/gocr/viewmodels"
 	"image"
 	"image/color"
 )
@@ -19,16 +19,20 @@ func AsGrayImage(im image.Image) *image.Gray {
 
 func Threshold(gim *image.Gray, t uint8) *image.Gray {
 
+	points := make(map[image.Point]bool)
 	bounds := gim.Bounds()
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			if gim.GrayAt(x, y).Y < t {
 				gim.Set(x, y, color.Black)
+				points[image.Point{x, y}] = true
 			} else {
 				gim.Set(x, y, color.White)
 			}
 		}
 	}
+
+	LightInterpolate(gim, points)
 
 	return gim
 }
@@ -61,6 +65,19 @@ func DrawingToImage(drawing d.Drawing) *image.Gray {
 	return gim
 }
 
+func LightInterpolate(gim *image.Gray, points map[image.Point]bool) {
+	bounds := gim.Bounds()
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			p := image.Point{X: x, Y: y}
+			if gim.GrayAt(x, y).Y == 255 &&
+				HasNeighboursLightFilter(p, gim, points) {
+				gim.Set(x, y, color.Gray{Y: 0})
+			}
+		}
+	}
+}
+
 func Interpolate(gim *image.Gray, points map[image.Point]bool) {
 	bounds := gim.Bounds()
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
@@ -72,6 +89,13 @@ func Interpolate(gim *image.Gray, points map[image.Point]bool) {
 			}
 		}
 	}
+}
+
+func HasNeighboursLightFilter(p image.Point, gim *image.Gray, points map[image.Point]bool) bool {
+	return IsBlack(image.Point{X: p.X, Y: p.Y - 1}, gim, points) ||
+		IsBlack(image.Point{X: p.X, Y: p.Y + 1}, gim, points) ||
+		IsBlack(image.Point{X: p.X + 1, Y: p.Y}, gim, points) ||
+		IsBlack(image.Point{X: p.X - 1, Y: p.Y}, gim, points)
 }
 
 func HasNeighboursFilter(p image.Point, gim *image.Gray, points map[image.Point]bool) bool {
