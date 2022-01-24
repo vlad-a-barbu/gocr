@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/vlad-a-barbu/gocr/server"
 	"image"
 	"log"
 	"os"
@@ -14,8 +13,8 @@ import (
 )
 
 func main() {
-	server.Serve(8081)
-	//Demo(false, true)
+	//server.Serve(8081)
+	Demo(false, false)
 }
 
 func Demo(writeHists bool, threshold bool) {
@@ -54,16 +53,16 @@ func Demo(writeHists bool, threshold bool) {
 	}
 }
 
-func ToHistData(id int, m map[int][]image.Point, gim *image.Gray) (rd []int, cd []int) {
+func ToHistData(id int, m map[int][]image.Point, gim *image.Gray) ([]int, []int) {
 	points := m[id]
 	si := r.SubImage(points, gim)
 	u.WritePng(si, "subimage.png")
 
-	rows, _ := r.TraverseCols(si)
-	rdata := r.GetHistData(rows)
+	_, rd := r.TraverseCols(si)
+	//rdata := r.GetHistData(rows) // num of continuous intervals
 
-	cols, _ := r.TraverseRows(si)
-	cdata := r.GetHistData(cols)
+	_, cd := r.TraverseRows(si)
+	//cdata := r.GetHistData(cols) // num of continuous intervals
 
-	return rdata, cdata
+	return rd, cd
 }

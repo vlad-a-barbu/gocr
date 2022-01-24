@@ -13,11 +13,18 @@ import (
 )
 
 func ReadImage(path string) (image.Image, error) {
+
 	reader, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	defer reader.Close()
+
+	defer func(reader *os.File) {
+		err := reader.Close()
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}(reader)
 
 	im, err := jpeg.Decode(reader)
 	if err != nil {
@@ -66,6 +73,17 @@ func WriteHists(m map[int][]image.Point, gim *image.Gray) {
 
 			r.GenerateHists(si, i)
 			fmt.Println("Hist generated ", i)
+
+			f, err := os.Create("hists/" + fmt.Sprint(i) + "/label.txt")
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer f.Close()
+			_, err2 := f.WriteString("UNKNOWN\n")
+			if err2 != nil {
+				log.Fatal(err2)
+			}
+
 			wg.Done()
 		}(id, ps)
 	}
